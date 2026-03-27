@@ -275,7 +275,7 @@ const SURF_STARTS=['5 AM','6 AM','7 AM','8 AM','9 AM','10 AM','11 AM','12 PM'];
 const CLIMB_TIMES=['6 AM','7 AM','8 AM','9 AM','10 AM','11 AM','12 PM','1 PM','2 PM','3 PM','4 PM','5 PM','6 PM','7 PM','8 PM','9 PM'];
 
 let workDays=[true,true,true,true,false,false,false];
-let workoutType=['pilates','pilates','pilates','none',null,null,null];
+let workoutType=['pilates','pilates','strength','strength',null,null,null];
 let offWorkout=[null,null,null,null,'none','none','none'];
 let yogaDays=Array(7).fill(false);
 let yogaTime=Array(7).fill('7 AM');
@@ -510,38 +510,69 @@ function getWeekLabel(off){
   const fmt=x=>x.toLocaleDateString('en-US',{month:'short',day:'numeric'});return fmt(mon)+' – '+fmt(sun);
 }
 
+// ── per-week storage ──────────────────────────────────────
+function getWeekKey(off){
+  const now=new Date(),d=now.getDay(),diff=now.getDate()-d+(d===0?-6:1);
+  const mon=new Date(now);mon.setDate(diff+off*7);
+  return `wp8_week_${mon.getFullYear()}_${mon.getMonth()}_${mon.getDate()}`;
+}
+
+function defaultState(){
+  return {
+    workDays:[true,true,true,true,false,false,false],
+    workoutType:['pilates','pilates','strength','strength',null,null,null],
+    offWorkout:[null,null,null,null,'none','none','none'],
+    yogaDays:Array(7).fill(false),yogaTime:Array(7).fill('7 AM'),
+    climbDays:Array(7).fill(false),climbTime:Array(7).fill('10 AM'),
+    surfDays:Array(7).fill(false),surfWorkDay:Array(7).fill(false),
+    surfStart:Array(7).fill('7 AM'),surfFcast:Array(7).fill('ok'),
+    appointments:[],notes:''
+  };
+}
+
 function save(){
   try{
-    localStorage.setItem('wp7_work',JSON.stringify(workDays));localStorage.setItem('wp7_wtype',JSON.stringify(workoutType));
-    localStorage.setItem('wp7_owt',JSON.stringify(offWorkout));localStorage.setItem('wp7_yoga',JSON.stringify(yogaDays));
-    localStorage.setItem('wp7_ytime',JSON.stringify(yogaTime));localStorage.setItem('wp7_climb',JSON.stringify(climbDays));
-    localStorage.setItem('wp7_ctime',JSON.stringify(climbTime));localStorage.setItem('wp7_surf',JSON.stringify(surfDays));
-    localStorage.setItem('wp7_swd',JSON.stringify(surfWorkDay));localStorage.setItem('wp7_ss',JSON.stringify(surfStart));
-    localStorage.setItem('wp7_fcast',JSON.stringify(surfFcast));localStorage.setItem('wp7_appts',JSON.stringify(appointments));
-    localStorage.setItem('wp7_notes',notes);
+    const state={workDays,workoutType,offWorkout,yogaDays,yogaTime,climbDays,climbTime,surfDays,surfWorkDay,surfStart,surfFcast,appointments,notes};
+    localStorage.setItem(getWeekKey(weekOff),JSON.stringify(state));
   }catch(e){}
 }
 
-function load(){
+function loadWeek(off){
   try{
-    const p=k=>{const v=localStorage.getItem(k);return v?JSON.parse(v):null;};
-    workDays=p('wp7_work')||workDays;workoutType=p('wp7_wtype')||workoutType;offWorkout=p('wp7_owt')||offWorkout;
-    yogaDays=p('wp7_yoga')||yogaDays;yogaTime=p('wp7_ytime')||yogaTime;climbDays=p('wp7_climb')||climbDays;
-    climbTime=p('wp7_ctime')||climbTime;surfDays=p('wp7_surf')||surfDays;surfWorkDay=p('wp7_swd')||surfWorkDay;
-    surfStart=p('wp7_ss')||surfStart;surfFcast=p('wp7_fcast')||surfFcast;appointments=p('wp7_appts')||appointments;
-    notes=localStorage.getItem('wp7_notes')||'';
-  }catch(e){}
+    const raw=localStorage.getItem(getWeekKey(off));
+    const s=raw?JSON.parse(raw):defaultState();
+    workDays=s.workDays||defaultState().workDays;
+    workoutType=s.workoutType||defaultState().workoutType;
+    offWorkout=s.offWorkout||defaultState().offWorkout;
+    yogaDays=s.yogaDays||Array(7).fill(false);
+    yogaTime=s.yogaTime||Array(7).fill('7 AM');
+    climbDays=s.climbDays||Array(7).fill(false);
+    climbTime=s.climbTime||Array(7).fill('10 AM');
+    surfDays=s.surfDays||Array(7).fill(false);
+    surfWorkDay=s.surfWorkDay||Array(7).fill(false);
+    surfStart=s.surfStart||Array(7).fill('7 AM');
+    surfFcast=s.surfFcast||Array(7).fill('ok');
+    appointments=s.appointments||[];
+    notes=s.notes||'';
+  }catch(e){
+    const d=defaultState();
+    workDays=d.workDays;workoutType=d.workoutType;offWorkout=d.offWorkout;
+    yogaDays=d.yogaDays;yogaTime=d.yogaTime;climbDays=d.climbDays;climbTime=d.climbTime;
+    surfDays=d.surfDays;surfWorkDay=d.surfWorkDay;surfStart=d.surfStart;surfFcast=d.surfFcast;
+    appointments=[];notes='';
+  }
 }
 
 function render(){buildHeader();buildSummary();buildDayControls();buildGrid();buildActPanel();buildForecast();buildStats();buildAppointments();document.getElementById('notes-area').value=notes;}
 
-document.getElementById('prev-week').addEventListener('click',()=>{weekOff--;render();});
-document.getElementById('next-week').addEventListener('click',()=>{weekOff++;render();});
+document.getElementById('prev-week').addEventListener('click',()=>{weekOff--;loadWeek(weekOff);render();});
+document.getElementById('next-week').addEventListener('click',()=>{weekOff++;loadWeek(weekOff);render();});
 document.getElementById('reset-btn').addEventListener('click',()=>{
-  workDays=[true,true,true,true,false,false,false];workoutType=['pilates','pilates','pilates','none',null,null,null];
-  offWorkout=[null,null,null,null,'none','none','none'];yogaDays=Array(7).fill(false);yogaTime=Array(7).fill('7 AM');
-  climbDays=Array(7).fill(false);climbTime=Array(7).fill('10 AM');surfDays=Array(7).fill(false);surfWorkDay=Array(7).fill(false);
-  surfStart=Array(7).fill('7 AM');surfFcast=Array(7).fill('ok');appointments=[];notes='';save();render();
+  const d=defaultState();
+  workDays=d.workDays;workoutType=d.workoutType;offWorkout=d.offWorkout;
+  yogaDays=d.yogaDays;yogaTime=d.yogaTime;climbDays=d.climbDays;climbTime=d.climbTime;
+  surfDays=d.surfDays;surfWorkDay=d.surfWorkDay;surfStart=d.surfStart;surfFcast=d.surfFcast;
+  appointments=[];notes='';save();render();
 });
 document.getElementById('appt-add-btn').addEventListener('click',()=>{
   const day=+document.getElementById('appt-day').value,time=document.getElementById('appt-time').value,desc=document.getElementById('appt-desc').value.trim();
@@ -549,7 +580,7 @@ document.getElementById('appt-add-btn').addEventListener('click',()=>{
   document.getElementById('appt-desc').value='';save();buildAppointments();buildGrid();buildStats();
 });
 document.getElementById('notes-area').addEventListener('input',e=>{notes=e.target.value;save();});
-load();render();
+loadWeek(weekOff);render();
 
 // register inline service worker for offline support
 if('serviceWorker' in navigator){
