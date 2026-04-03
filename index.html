@@ -104,8 +104,8 @@ header{display:flex;align-items:flex-end;justify-content:space-between;margin-bo
 .cell.surf    {background:var(--surf);    border-color:rgba(58,158,200,.4);   color:var(--surf-t);}
 .cell.appt    {background:var(--appt);    border-color:rgba(224,80,80,.45);   color:var(--appt-t);cursor:pointer;position:relative;}
 
-/* appointment popup box */
-.appt-bubble{position:fixed;z-index:999;background:#1e0a0a;border:1px solid rgba(224,80,80,.5);border-radius:8px;padding:12px 14px;width:200px;box-shadow:0 4px 24px rgba(0,0,0,.6);}
+/* appointment popup box - fixed bottom right */
+.appt-bubble{position:fixed;z-index:999;background:#1e0a0a;border:1px solid rgba(224,80,80,.5);border-radius:8px;padding:12px 14px;width:200px;box-shadow:0 4px 24px rgba(0,0,0,.6);bottom:24px;right:16px;}
 .appt-bubble-title{font-size:12px;font-weight:500;color:var(--appt-t);font-family:'DM Mono',monospace;margin-bottom:4px;}
 .appt-bubble-time{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:4px;}
 .appt-bubble-notes{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.5;border-top:1px solid rgba(224,80,80,.2);padding-top:6px;margin-top:4px;}
@@ -429,13 +429,9 @@ function buildGrid(){
             const[hh,mm]=appt.time.split(':');const hNum=parseInt(hh),ampm=hNum>=12?'PM':'AM',h12=hNum%12||12;
             bubble.innerHTML=`<div class="appt-bubble-title">❗ ${appt.desc}</div><div class="appt-bubble-time">${DAYS[appt.day]} · ${h12}:${mm} ${ampm}</div>${appt.notes?`<div class="appt-bubble-notes">${appt.notes}</div>`:''}`;
             document.body.appendChild(bubble);
-            const r=cell.getBoundingClientRect();
-            const bw=200;
-            let left=r.left+r.width/2-bw/2;
-            if(left<8)left=8;
-            if(left+bw>window.innerWidth-8)left=window.innerWidth-bw-8;
-            bubble.style.left=left+'px';
-            bubble.style.top=(r.top-bubble.offsetHeight-10+window.scrollY)+'px';
+            // dismiss on scroll
+            const onScroll=()=>{bubble.remove();window.removeEventListener('scroll',onScroll,true);};
+            window.addEventListener('scroll',onScroll,true);
           });
         }
       }
